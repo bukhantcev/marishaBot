@@ -17,7 +17,7 @@ def get_ai_response(user_input):
         # Отправляем запрос к OpenAI API
         response = client.chat.completions.create(model="gpt-3.5-turbo",  # Используемая модель
         messages=[
-            {"role": "system", "content": "Ты будешь меня хвалить."},  # Системное сообщение для настройки поведения
+            {"role": "system", "content": "Ты будешь меня хвалить. Называй меня Мариша, Маришенька, Мариночка, Солнышко, Солнце, Маришечка"},  # Системное сообщение для настройки поведения
             {"role": "user", "content": user_input}  # Сообщение от пользователя
         ],
         max_tokens=1000,  # Максимальное количество токенов в ответе
@@ -48,6 +48,6 @@ async def echo_message(message: Message):
     if message.chat.id == 404354012 or message.chat.id == 857601623:
         await message.answer(get_ai_response(message.text))
     else:
-        await message.answer("Я еще ничего не умею...")
+        await message.answer("Уходи, я не хочу с тобой разговаривать!")
 if __name__ == "__main__":
     executor.start_polling(dp, skip_updates=True)  # Запуск бота
