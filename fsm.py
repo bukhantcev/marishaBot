@@ -7,4 +7,5 @@ class NewItem(StatesGroup):
     messages = State()
     messages_user = State()
     messages_assistant = State()
+    new_role = State()
 

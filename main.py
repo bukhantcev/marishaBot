@@ -80,7 +80,7 @@ logging.basicConfig(level=logging.INFO)
 bot = Bot(token=API_TOKEN)
 dp = Dispatcher(bot, storage=memory)
 
-# Обработчик текстовых сообщений (Эхо-бот)
+# Контекст
 @dp.message_handler(Text(equals="давай поговорим", ignore_case=True))
 async def echo_message(message: Message, state:FSMContext):
 
@@ -107,7 +107,6 @@ async def echo_message(message: Message, state:FSMContext):
     else:
         await message.answer("Уходи, я не хочу с тобой разговаривать!")
 
-
 @dp.message_handler(state=NewItem.messages)
 async def echo_message(message: Message, state:FSMContext):
 
@@ -117,7 +116,17 @@ async def echo_message(message: Message, state:FSMContext):
         task = tasks.pop(message.chat.id, None)
         if task:
             task.cancel()  # Отмена таймера
-        role = roles.role_m if message.chat.id == 857601623 else roles.role_s
+        file = "role_m.txt" if message.chat.id == 857601623 else "role_s.txt"
+        try:
+
+            source = open(file, "r")
+        except:
+            with open(file, "w") as new_file:
+                new_file.write(roles.role_m if message.chat.id == 857601623 else roles.role_s)
+            source = open(file, "r")
+
+
+        role = source.read()
         data = await state.get_data()
 
         if 'messages' not in data:
@@ -138,12 +147,17 @@ async def echo_message(message: Message, state:FSMContext):
 
         await message.answer(answer)
         messages.append({"role": "assistant", "content": answer})
+        print(role)
 
         await state.update_data(messages=messages)
         task = asyncio.create_task(auto_finish_fsm(message.chat.id, state, TIMEOUT))
         tasks[message.chat.id] = task
         print('dialog')
+        source.close()
+
         if str(message.text).lower() == 'пока':
+            with open(file, "w") as new_file:
+                new_file.write(roles.role_m if message.chat.id == 857601623 else roles.role_s)
             await state.finish()
             print('off dialog')
 
@@ -153,6 +167,61 @@ async def echo_message(message: Message, state:FSMContext):
 
 
 
+# Change role
+
+@dp.message_handler(Text(equals="позови друга", ignore_case=True))
+async def echo_message(message: Message, state:FSMContext):
+
+    await NewItem.new_role.set()  # Устанавливаем состояние
+
+    if message.chat.id == 404354012 or message.chat.id == 857601623:
+
+
+        await message.answer("Напиши кого ты хочешь видеть")
+        task = asyncio.create_task(auto_finish_fsm(message.chat.id, state, TIMEOUT))
+        tasks[message.chat.id] = task
+        print('change')
+
+    else:
+        await message.answer("Уходи, я не хочу с тобой разговаривать!")
+
+
+
+
+
+@dp.message_handler(state=NewItem.new_role)
+async def echo_message(message: Message, state:FSMContext):
+
+
+    if message.chat.id == 404354012 or message.chat.id == 857601623:
+        # Получаем задачу из словаря и отменяем её
+        task = tasks.pop(message.chat.id, None)
+        if task:
+            task.cancel()  # Отмена таймера
+
+        file = "role_m.txt" if message.chat.id == 857601623 else "role_s.txt"
+        with open(file, "w") as file_role:
+            file_role.write(message.text)
+        await message.answer("Я изменился, готов поговорить")
+        await NewItem.messages.set()
+
+        task = asyncio.create_task(auto_finish_fsm(message.chat.id, state, TIMEOUT))
+        tasks[message.chat.id] = task
+        print('dialog')
+        if str(message.text).lower() == 'пока':
+            with open(file, "w") as new_file:
+                new_file.write(roles.role_m if message.chat.id == 857601623 else roles.role_s)
+            await state.finish()
+            print('off dialog')
+
+
+    else:
+        await message.answer("Уходи, я не хочу с тобой разговаривать!")
+
+
+
+
+# Без контекста
 
 @dp.message_handler()
 async def echo_message(message: Message):
@@ -199,6 +268,9 @@ async def auto_finish_fsm(chat_id: int, state: FSMContext, timeout: int):
         await asyncio.sleep(timeout)  # Ждём тайм-аут
         current_state = await state.get_state()
         if current_state:  # Если пользователь всё ещё в состоянии
+            file = "role_m.txt" if chat_id == 857601623 else "role_s.txt"
+            with open(file, "w") as new_file:
+                new_file.write(roles.role_m if chat_id == 857601623 else roles.role_s)
             await state.finish()  # Завершаем FSM
             await bot.send_message(chat_id, "Ну вот и поговорили...")
     except asyncio.CancelledError:
