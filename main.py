@@ -59,7 +59,15 @@ def get_img(prompt):
     return(image_url)
 
 
-
+def generate_image(prompt):
+    response = client.images.generate(
+        model="dall-e-2",  # Укажи модель DALL·E 2 (или "dall-e-3", если доступна)
+        prompt=prompt,
+        n=1,  # Количество изображений
+        size="1024x1024"  # Размер: "256x256", "512x512", "1024x1024"
+    )
+    image_url = response.data[0].url
+    return image_url
 
 # Установите ваш API-ключ Telegram Bot
 API_TOKEN = os.getenv('TOKEN')
@@ -151,9 +159,21 @@ async def echo_message(message: Message):
 
 
     if message.chat.id == 404354012 or message.chat.id == 857601623:
-        if 'нарисуй' in str(message.text).lower():
-            await message.answer('Одну минуту...')
-            await bot.send_photo(chat_id=message.chat.id, photo=get_img(message.text), caption="Наслаждайся!")
+        if message.text.lower().startswith("нарисуй"):
+            prompt = message.text[len("нарисуй"):].strip()  # Извлекаем описание
+
+            if not prompt:
+                await message.reply("Пожалуйста, напишите, что нарисовать.")
+                return
+
+            await message.reply("Минуточку... ⏳")
+
+            try:
+                image_url = generate_image(prompt)
+                await bot.send_photo(message.chat.id, image_url, caption=f"Наслаждайся))")
+            except Exception as e:
+                logging.error(f"Ошибка при генерации изображения: {e}")
+                await message.reply("Не удалось сгенерировать изображение. Попробуйте позже.")
             return message.text
         role = roles.role_m if message.chat.id == 857601623 else roles.role_s
         messages = [{"role": "system", "content": role},
@@ -188,33 +208,9 @@ async def auto_finish_fsm(chat_id: int, state: FSMContext, timeout: int):
 
 #generated img
 
-def generate_image(prompt):
-    response = client.images.generate(
-        model="dall-e-2",  # Укажи модель DALL·E 2 (или "dall-e-3", если доступна)
-        prompt=prompt,
-        n=1,  # Количество изображений
-        size="1024x1024"  # Размер: "256x256", "512x512", "1024x1024"
-    )
-    image_url = response.data[0].url
-    return image_url
 
 
-@dp.message_handler(lambda message: message.text.lower().startswith("нарисуй"))
-async def handle_draw_command(message: types.Message):
-    prompt = message.text[len("нарисуй"):].strip()  # Извлекаем описание
 
-    if not prompt:
-        await message.reply("Пожалуйста, напишите, что нарисовать. Например: «нарисуй космический город».")
-        return
-
-    await message.reply("Минуточку... ⏳")
-
-    try:
-        image_url = generate_image(prompt)
-        await bot.send_photo(message.chat.id, image_url, caption=f"Наслаждайся)): {prompt}")
-    except Exception as e:
-        logging.error(f"Ошибка при генерации изображения: {e}")
-        await message.reply("Не удалось сгенерировать изображение. Попробуйте позже.")
 
 
 if __name__ == "__main__":
