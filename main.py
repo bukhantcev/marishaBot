@@ -16,7 +16,7 @@ import roles
 from io import BytesIO
 from PIL import Image
 
-
+from translate import get_translator
 
 
 
@@ -238,7 +238,8 @@ async def echo_message(message: Message):
             await message.reply("Минуточку... ⏳")
 
             try:
-                image_url = generate_image(prompt)
+                prompt_en = get_translator('ru', 'en', prompt)
+                image_url = generate_image(prompt_en)
                 await bot.send_photo(message.chat.id, image_url, caption=f"Наслаждайся))")
             except Exception as e:
                 logging.error(f"Ошибка при генерации изображения: {e}")
