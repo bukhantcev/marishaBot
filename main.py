@@ -41,7 +41,7 @@ def get_ai_response(user_input, role:str, messages:list):
         response = client.chat.completions.create(model="gpt-3.5-turbo",  # Используемая модель
         messages=messages,
         max_tokens=1000,  # Максимальное количество токенов в ответе
-        temperature=0.7)
+        temperature=0.7,)
         # Получаем текст ответа
         return response.choices[0].message.content.strip()
     except openai.OpenAIError as e:
@@ -109,6 +109,7 @@ async def echo_message(message: Message, state:FSMContext):
             role = roles.role_m if message.chat.id == 857601623 else roles.role_s
             messages = [{"role": "system", "content": role},
                         {"role": "user", "content": text},
+
                         ]
             if message.chat.id == 857601623:
                 await bot.send_message(chat_id=404354012, text=text)
